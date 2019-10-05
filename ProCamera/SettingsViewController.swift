@@ -20,28 +20,30 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     
     @IBOutlet weak var tableView: UITableView!
     
-    override func supportedInterfaceOrientations() -> Int {
-        return Int(UIInterfaceOrientationMask.AllButUpsideDown.rawValue)
+    override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
+        return .allButUpsideDown
     }
     
-    override func shouldAutorotate() -> Bool {
+    override var shouldAutorotate: Bool {
         return true
     }
     
-    override func didRotateFromInterfaceOrientation(fromInterfaceOrientation: UIInterfaceOrientation) {
+    override func willTransition(to newCollection: UITraitCollection, with coordinator: UIViewControllerTransitionCoordinator) {
+        super.willTransition(to: newCollection, with: coordinator)
         self.view.window?.reloadInputViews()
     }
-    
+            
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
-        let settingsValueTmp = NSUserDefaults.standardUserDefaults().objectForKey("settingsStore") as? [String: Bool]
+        let settingsValueTmp = UserDefaults.standard.object(forKey: "settingsStore") as? [String: Bool]
         if settingsValueTmp != nil {
             settingsValue = settingsValueTmp!
         } else {
             settingsValue = [String: Bool]()
         }
-        println("\(settingsValue) View did load")
+        view.backgroundColor = .white
+        tableView.backgroundColor = .white
     }
 
     override func didReceiveMemoryWarning() {
@@ -49,9 +51,13 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         // Dispose of any resources that can be recreated.
     }
     
-    @IBAction func onClose(sender: UIButton) {
-        dismissViewControllerAnimated(true, completion: { () -> Void in
-            NSNotificationCenter.defaultCenter().postNotificationName("settingsUpdatedNotification", object: nil, userInfo: self.settingsValue)
+    deinit {
+        print("deinit")
+    }
+    
+    @IBAction func onClose(_ sender: UIButton) {
+        dismiss(animated: true, completion: {
+            NotificationCenter.default.post(name: NSNotification.Name(rawValue: "settingsUpdatedNotification"), object: nil, userInfo: self.settingsValue)
         })
     }
     
@@ -59,18 +65,15 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         switch name {
         case settings[0], settings[1], settings[2]:
             settingsValue[name] = value
-        default:
-            let x = 1
+        default: break
         }
-        println("\(self.settingsValue) changeSetting")
         //set data
-        NSUserDefaults.standardUserDefaults().setObject(settingsValue, forKey: "settingsStore")
+        UserDefaults.standard.set(settingsValue, forKey: "settingsStore")
     }
     
-    func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
-        println("\(self.settingsValue) cellForRowAtIndexPath")
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         if indexPath.row < 4 {
-            var cell = tableView.dequeueReusableCellWithIdentifier("settingBoolCell") as SettingBoolTableViewCell
+            let cell = tableView.dequeueReusableCell(withIdentifier: "settingBoolCell") as! SettingBoolTableViewCell
             var on: Bool? = self.settingsValue[settings[indexPath.row]]
             if on == nil {
                 on = false
@@ -80,13 +83,13 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             cell.delegate = self
             return cell
         } else {
-            var cell = tableView.dequeueReusableCellWithIdentifier("settingOptionsCell") as SettingOptionsTableViewCell
+            let cell = tableView.dequeueReusableCell(withIdentifier: "settingOptionsCell") as! SettingOptionsTableViewCell
             cell.settingName.text = settings[indexPath.row]
             cell.optionVal.text = "Default" //place holder
             return cell
         }
     }
-    func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return settings.count
     }
     
